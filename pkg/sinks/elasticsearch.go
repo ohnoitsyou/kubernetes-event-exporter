@@ -28,12 +28,13 @@ type ElasticsearchConfig struct {
 	// Indexing preferences
 	UseEventID bool `yaml:"useEventID"`
 	// DeDot all labels and annotations in the event. For both the event and the involvedObject
-	DeDot       bool                   `yaml:"deDot"`
-	Index       string                 `yaml:"index"`
-	IndexFormat string                 `yaml:"indexFormat"`
-	Type        string                 `yaml:"type"`
-	TLS         TLS                    `yaml:"tls"`
-	Layout      map[string]interface{} `yaml:"layout"`
+	DeDot          bool                   `yaml:"deDot"`
+	Index          string                 `yaml:"index"`
+	IndexFormat    string                 `yaml:"indexFormat"`
+	Type           string                 `yaml:"type"`
+	TLS            TLS                    `yaml:"tls"`
+	Layout         map[string]interface{} `yaml:"layout"`
+	ParseIndexVars bool                   `yaml:"parseIndexVars"`
 }
 
 func NewElasticsearch(cfg *ElasticsearchConfig) (*Elasticsearch, error) {
@@ -123,6 +124,13 @@ func (e *Elasticsearch) Send(ctx context.Context, ev *kube.EnhancedEvent) error 
 		index = formatIndexName(e.cfg.IndexFormat, now)
 	} else {
 		index = e.cfg.Index
+	}
+	if e.cfg.ParseIndexVars {
+		var parsedIndex, err = GetString(ev, index)
+		if err != nil {
+			return err
+		}
+		index = parsedIndex
 	}
 
 	req := esapi.IndexRequest{
